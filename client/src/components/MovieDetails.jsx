@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import Comment from './Comment';
+import CommentForm from './CommentForm';
 
 function MovieDetails() {
   const { id } = useParams();
@@ -9,20 +10,20 @@ function MovieDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchMovieDetails = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/movies/${id}`);
-        setMovieData(response.data);
-        setLoading(false);
-      } catch (err) {
-        setError('Error fetching movie details. Please try again later.');
-        setLoading(false);
-        console.error('Error fetching movie details:', err);
-      }
-    };
+  const fetchMovieDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/movies/${id}`);
+      setMovieData(response.data);
+      setLoading(false);
+    } catch (err) {
+      setError('Error fetching movie details. Please try again later.');
+      setLoading(false);
+      console.error('Error fetching movie details:', err);
+    }
+  };
 
+  useEffect(() => {
     fetchMovieDetails();
   }, [id]);
 
@@ -98,12 +99,23 @@ function MovieDetails() {
       
       <div className="comments-section">
         <h2>Comments ({comments.length})</h2>
+        
+        <CommentForm 
+          movieId={id} 
+          onCommentAdded={fetchMovieDetails}
+        />
+        
         {comments.length === 0 ? (
           <p>No comments for this movie.</p>
         ) : (
           <div className="comments-list">
             {comments.map(comment => (
-              <Comment key={comment._id} comment={comment} />
+              <Comment 
+                key={comment._id} 
+                comment={comment}
+                onCommentUpdated={fetchMovieDetails}
+                onCommentDeleted={fetchMovieDetails}
+              />
             ))}
           </div>
         )}

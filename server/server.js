@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { connectToDatabase } = require('./models/db');
 const moviesRoutes = require('./routes/movies');
+const commentsRoutes = require('./routes/comments');
 
 require('dotenv').config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/movies', moviesRoutes);
+app.use('/api/comments', commentsRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
