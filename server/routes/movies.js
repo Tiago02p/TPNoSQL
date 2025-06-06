@@ -4,7 +4,8 @@ const { ObjectId } = require('mongodb');
 const { getDb } = require('../models/db');
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL = process.env.MODEL;
+
+require('dotenv').config(); // or import 'dotenv/config';
 
 const router = express.Router();
 
@@ -79,44 +80,55 @@ router.get('/', async (req, res) => {
 router.post('/recommend', async (req, res) => {
   try {
     const { prompt, userType = 'casual' } = req.body;
-    
+    console.log('[Request] /recommend called with:', { prompt, userType });
+
     if (!prompt) {
+      console.warn('[Validation] Missing prompt');
       return res.status(400).json({ message: 'Prompt is required' });
     }
-    
+
     if (!SYSTEM_PROMPTS[userType]) {
+      console.warn('[Validation] Invalid user type:', userType);
       return res.status(400).json({ message: 'Invalid user type' });
     }
-    
-    console.log('Getting recommendations:', { prompt, userType });
-    
+
+    console.log('Getting recommendations for userType:', userType);
+
     const db = getDb();
     if (!db) {
-      console.error('Database connection not established');
+      console.error('[Database] Connection not established');
       return res.status(500).json({ message: 'Database connection error' });
     }
 
-    console.log('Fetching movies for recommendations...');
+    console.log('[Database] Fetching movies...');
     const movies = await db.collection('movies')
       .find({})
       .project({ title: 1, year: 1, genre: 1, plot: 1, rating: 1 })
       .toArray();
 
     if (!movies || movies.length === 0) {
+      console.warn('[Database] No movies found');
       return res.status(404).json({ message: 'No movies found in database' });
     }
 
-    const systemPrompt = SYSTEM_PROMPTS[userType];
-    const movieList = movies.map(m => `${m.title} (${m.year}) - Genre: ${m.genre}, Rating: ${m.rating}`).join('\n');
+    console.log(`[Database] Found ${movies.length} movies`);
 
-    console.log(`Found ${movies.length} movies for recommendations`);
+    const systemPrompt = SYSTEM_PROMPTS[userType];
+    const trimmedMovies = movies
+      .filter(m => m.genre && m.rating) // only include well-formed movies
+      .slice(0, 50); // limit to 50 movies max
+
+    const movieList = trimmedMovies.map(m =>
+      `${m.title} (${m.year}) - Genre: ${m.genre}, Rating: ${m.rating}`
+    ).join('\n');
 
     if (!process.env.OPENROUTER_API_KEY) {
+      console.error('[Config] OPENROUTER_API_KEY not set');
       return res.status(500).json({ message: 'API key is not configured' });
     }
 
     // Prepare the messages for OpenRouter
-     const messages = [
+    const messages = [
       { role: "system", content: systemPrompt },
       {
         role: "user",
@@ -132,58 +144,60 @@ router.post('/recommend', async (req, res) => {
       }
     ];
 
-    console.log('Sending request to OpenRouter...');
+    console.log('[OpenRouter] Sending request to OpenRouter API...');
 
     const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
       model: 'mistralai/mixtral-8x7b-instruct',
       messages: messages
     }, {
       headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json'
       }
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('OpenRouter error:', data);
-      return res.status(500).json({ message: 'Error from OpenRouter', details: data });
+    if (response.status !== 200) {
+      console.error('[OpenRouter] Non-200 response:', response.status, response.data);
+      return res.status(500).json({ message: 'Error from OpenRouter', details: response.data });
     }
 
-    
+    console.log('[OpenRouter] Response received');
+
     const content = response.data.choices?.[0]?.message?.content;
+    if (!content) {
+      console.error('[OpenRouter] Empty response content');
+      return res.status(500).json({ message: 'Empty response from OpenRouter' });
+    }
+
     try {
       const json = JSON.parse(content);
+      console.log('[OpenRouter] Parsed JSON response successfully');
       res.json(json);
     } catch (parseError) {
-      console.error('Failed to parse JSON from OpenRouter:', content);
+      console.error('[Parse Error] Failed to parse JSON from OpenRouter response:', content);
       res.status(500).json({ message: 'Invalid JSON from model', raw: content });
     }
+
   } catch (error) {
-    console.error('Error getting recommendations:', error);
-    console.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
-    
-    // More specific error messages based on the error type
+    console.error('[Error] Exception caught in /recommend:', error);
+
     if (error.name === 'OpenRouterError') {
-      return res.status(500).json({ 
+      console.error('[OpenRouterError]', error.message);
+      return res.status(500).json({
         message: 'Error communicating with OpenRouter',
         details: error.message
       });
     }
-    
+
     if (error.name === 'SyntaxError' && error.message.includes('JSON')) {
-      return res.status(500).json({ 
+      console.error('[SyntaxError] JSON parsing issue:', error.message);
+      return res.status(500).json({
         message: 'Error parsing OpenRouter response',
         details: error.message
       });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       message: 'Error getting recommendations',
       details: error.message
     });
