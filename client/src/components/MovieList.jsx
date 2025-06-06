@@ -40,7 +40,12 @@ function MovieList() {
 
   return (
     <div className="movie-list">
-      <h1>Movies</h1>
+      <div className="movie-list-header">
+        <h1>Movies</h1>
+        <Link to="/recommendations" className="recommendations-link">
+          Get AI Recommendations
+        </Link>
+      </div>
       <div className="movies-grid">
         {movies.map(movie => (
           <Link to={`/movie/${movie._id}`} key={movie._id} className="movie-card">
