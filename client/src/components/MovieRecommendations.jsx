@@ -8,20 +8,43 @@ const MovieRecommendations = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  console.log('MovieRecommendations render state:', {
+    prompt,
+    userType,
+    hasRecommendations: !!recommendations,
+    loading,
+    error
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Submitting recommendation request:', { prompt, userType });
+    
     setLoading(true);
     setError(null);
 
     try {
-      const response = await axios.post('http://localhost:3000/api/movies/recommend', {
+      const apiUrl = `${import.meta.env.VITE_API_URL}/movies/recommend`;
+      console.log('Making API request to:', apiUrl);
+      
+      const response = await axios.post(apiUrl, {
         prompt,
         userType
       });
+      
+      console.log('Received recommendations:', {
+        recommendationsCount: response.data.recommendations?.length || 0,
+        hasExplanation: !!response.data.explanation
+      });
+      
       setRecommendations(response.data);
     } catch (err) {
+      console.error('Error getting recommendations:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
       setError('Failed to get recommendations. Please try again.');
-      console.error('Error:', err);
     } finally {
       setLoading(false);
     }
@@ -37,7 +60,10 @@ const MovieRecommendations = () => {
           <select
             id="userType"
             value={userType}
-            onChange={(e) => setUserType(e.target.value)}
+            onChange={(e) => {
+              console.log('User type changed to:', e.target.value);
+              setUserType(e.target.value);
+            }}
             className="form-select"
           >
             <option value="casual">Casual Viewer</option>
@@ -51,19 +77,30 @@ const MovieRecommendations = () => {
           <textarea
             id="prompt"
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={(e) => {
+              console.log('Prompt updated:', e.target.value);
+              setPrompt(e.target.value);
+            }}
             placeholder="e.g., What movies should I watch if I liked Inception?"
             className="form-textarea"
             rows="3"
           />
         </div>
 
-        <button type="submit" disabled={loading} className="submit-button">
+        <button 
+          type="submit" 
+          disabled={loading || !prompt.trim()} 
+          className={`submit-button ${(!prompt.trim() || loading) ? 'disabled' : ''}`}
+        >
           {loading ? 'Getting Recommendations...' : 'Get Recommendations'}
         </button>
       </form>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
 
       {recommendations && (
         <div className="recommendations-results">
@@ -71,12 +108,15 @@ const MovieRecommendations = () => {
           <p className="explanation">{recommendations.explanation}</p>
           
           <div className="recommendations-list">
-            {recommendations.recommendations.map((rec, index) => (
-              <div key={index} className="recommendation-card">
-                <h4>{rec.title}</h4>
-                <p>{rec.reason}</p>
-              </div>
-            ))}
+            {recommendations.recommendations.map((rec, index) => {
+              console.log('Rendering recommendation:', { index, title: rec.title });
+              return (
+                <div key={index} className="recommendation-card">
+                  <h4>{rec.title}</h4>
+                  <p>{rec.reason}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

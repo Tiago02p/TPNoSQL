@@ -6,6 +6,13 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   server: {
-    port: 3000 // To keep the same port as CRA for consistency
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   }
 })

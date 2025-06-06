@@ -531,3 +531,14 @@ button:disabled {
   text-decoration: none;
   color: white;
 }
+
+.no-movies {
+  text-align: center;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin: 2rem auto;
+  max-width: 600px;
+  color: #666;
+  font-size: 1.2rem;
+}
