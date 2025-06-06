@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 const MovieRecommendations = () => {
   const [prompt, setPrompt] = useState('');
@@ -52,6 +53,7 @@ const MovieRecommendations = () => {
 
   return (
     <div className="movie-recommendations">
+      <Link to="/" className="back-link">← Back to Movies</Link>
       <h2>AI Movie Recommendations</h2>
       
       <form onSubmit={handleSubmit} className="recommendation-form">
