@@ -253,4 +253,34 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Check if movie exists by title
+router.get('/check/:title', async (req, res) => {
+  try {
+    const title = decodeURIComponent(req.params.title);
+    console.log('Checking if movie exists:', title);
+    
+    const db = getDb();
+    if (!db) {
+      console.error('Database connection not established');
+      return res.status(500).json({ message: 'Database connection error' });
+    }
+    
+    const movie = await db.collection('movies').findOne(
+      { title: { $regex: new RegExp(`^${title}$`, 'i') } },
+      { projection: { _id: 1 } }
+    );
+    
+    if (!movie) {
+      console.log('Movie not found:', title);
+      return res.json({ exists: false });
+    }
+    
+    console.log('Movie found:', { title, id: movie._id });
+    res.json({ exists: true, id: movie._id });
+  } catch (error) {
+    console.error('Error checking movie:', error);
+    res.status(500).json({ message: 'Error checking movie' });
+  }
+});
+
 module.exports = router;

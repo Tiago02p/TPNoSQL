@@ -493,10 +493,22 @@ button:disabled {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .recommendation-card:hover {
   transform: translateY(-2px);
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.recommendation-card:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
 }
 
 .recommendation-card h4 {
@@ -541,4 +553,14 @@ button:disabled {
   max-width: 600px;
   color: #666;
   font-size: 1.2rem;
+}
+
+.movie-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 1rem;
+  margin: 1rem 0;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  text-align: center;
 }

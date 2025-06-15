@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const MovieRecommendations = () => {
   const [prompt, setPrompt] = useState('');
@@ -8,6 +8,8 @@ const MovieRecommendations = () => {
   const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [movieWarning, setMovieWarning] = useState(null);
+  const navigate = useNavigate();
 
   console.log('MovieRecommendations render state:', {
     prompt,
@@ -51,11 +53,35 @@ const MovieRecommendations = () => {
     }
   };
 
+  const handleMovieClick = async (e, movieTitle) => {
+    e.preventDefault();
+    setMovieWarning(null);
+    
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/movies/check/${encodeURIComponent(movieTitle)}`);
+      
+      if (response.data.exists) {
+        navigate(`/movie/${response.data.id}`);
+      } else {
+        setMovieWarning(`"${movieTitle}" is not in our database. It was recommended by AI but we don't have its details.`);
+      }
+    } catch (err) {
+      console.error('Error checking movie:', err);
+      setMovieWarning('Error checking if movie exists. Please try again.');
+    }
+  };
+
   return (
     <div className="movie-recommendations">
       <Link to="/" className="back-link">← Back to Movies</Link>
       <h2>AI Movie Recommendations</h2>
       
+      {movieWarning && (
+        <div className="movie-warning">
+          {movieWarning}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="recommendation-form">
         <div className="form-group">
           <label htmlFor="userType">I am a:</label>
@@ -113,7 +139,18 @@ const MovieRecommendations = () => {
             {recommendations.recommendations.map((rec, index) => {
               console.log('Rendering recommendation:', { index, title: rec.title });
               return (
-                <div key={index} className="recommendation-card">
+                <div 
+                  key={index} 
+                  className="recommendation-card"
+                  onClick={(e) => handleMovieClick(e, rec.title)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleMovieClick(e, rec.title);
+                    }
+                  }}
+                >
                   <h4>{rec.title}</h4>
                   <p>{rec.reason}</p>
                 </div>
