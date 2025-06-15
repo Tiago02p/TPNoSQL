@@ -16,7 +16,11 @@ console.log('Starting server with configuration:', {
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['https://tpnosql-client.onrender.com', 'http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Request logging middleware
