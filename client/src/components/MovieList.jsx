@@ -11,7 +11,7 @@ function MovieList() {
 
   useEffect(() => {
     const fetchMovies = async () => {
-      const apiUrl = '/api/movies?page=' + page;
+      const apiUrl = `${import.meta.env.VITE_API_URL}/movies?page=${page}`;
       console.log('Fetching movies from:', apiUrl);
       
       try {
